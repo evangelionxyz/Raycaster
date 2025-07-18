@@ -65,6 +65,7 @@ fn main() {
             else { State::None };
             editor.wall_creation.start = Vector2::zero();
             editor.wall_creation.end = Vector2::zero();
+            selected_lines.clear();
         }
 
         let mut is_drawing = false;
@@ -94,7 +95,7 @@ fn main() {
 
             if h_drawing.is_mouse_button_down(MouseButton::MOUSE_BUTTON_LEFT) {
                 is_selecting = true;
-                
+
                 selection.end = mouse_pos - selection.start;
 
                 // Outline
@@ -154,7 +155,7 @@ fn main() {
         // Drawl wall
         for (index, w) in editor.walls.iter().enumerate() {
             if is_selecting {
-                if w.start.x >= editor.selection.start.x && w.end.x <= editor.selection.end.x 
+                if w.start.x >= editor.selection.start.x && w.end.x <= editor.selection.end.x
                     && w.start.y >= editor.selection.start.y && w.end.y <= editor.selection.end.y {
                     if !selected_lines.contains(&index) {
                         selected_lines.insert(index);
@@ -184,6 +185,13 @@ fn main() {
                 
                 if h_drawing.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
                     if editor.wall_creation.start != editor.wall_creation.end {
+
+                        if editor.wall_creation.start.x > editor.wall_creation.end.x || editor.wall_creation.start.y > editor.wall_creation.end.y {
+                           let start = editor.wall_creation.start;
+                            editor.wall_creation.start = editor.wall_creation.end;
+                            editor.wall_creation.end = start;
+                        }
+
                         editor.walls.push(Line {
                             start: editor.wall_creation.start,
                             end: editor.wall_creation.end,
