@@ -30,16 +30,18 @@ struct Editor {
 }
 
 fn main() {
+    let screen_width = 1080;
+    let screen_height = 640;
     let (mut rl, thread) = init()
-        .size(1080, 640)
+        .size(screen_width, screen_height)
         .title("Raylib Rust")
-        .resizable()
+        //.resizable()
         .build();
 
     const REFRESH_INTERVAL: f32 = 1.0;
     let circle_radius: f32 = 3.0;
     let line_radius: f32 = 1000.0;
-    let line_count = 100;
+    let line_count = 50;
     let font_size = 20;
     let mut fps_str = String::from("FPS 0");
     let mut fps_timer: f32 = 0.0;
@@ -56,11 +58,25 @@ fn main() {
         selection: Line{..Line::default()},
     };
 
+    // Add border walls
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(0.0, 0.0), end: Vector2::new(screen_width as f32, 0.0) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(screen_width as f32, 0.0), end: Vector2::new(screen_width as f32, screen_height as f32) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(screen_width as f32, screen_height as f32), end: Vector2::new(0.0, screen_height as f32) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(0.0, screen_height as f32), end: Vector2::new(0.0, 0.0) });
+
+    // Add some random walls inside
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(100.0, 150.0), end: Vector2::new(300.0, 100.0) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(200.0, 500.0), end: Vector2::new(450.0, 550.0) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(600.0, 600.0), end: Vector2::new(700.0, 400.0) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(900.0, 150.0), end: Vector2::new(1100.0, 250.0) });
+    editor.walls.insert(Uuid::new_v4(), Line{ start: Vector2::new(950.0, 500.0), end: Vector2::new(1150.0, 650.0) });
+
     while !rl.window_should_close() {
         let mut h_drawing = rl.begin_drawing(&thread);
         let mouse_pos = h_drawing.get_mouse_position();
 
-        if h_drawing.is_key_pressed(KeyboardKey::KEY_TAB) {
+        if h_drawing.is_key_pressed(KeyboardKey::KEY_TAB)
+            || h_drawing.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT) {
             editor.state = if editor.state == State::None { State::CreateWall }
             else { State::None };
             editor.wall_creation.start = Vector2::zero();
@@ -72,9 +88,9 @@ fn main() {
         let mut is_selecting = false;
 
         if editor.state == State::None {
-
             // Deleting selected walls
-            if h_drawing.is_key_pressed(KeyboardKey::KEY_DELETE) {
+            if h_drawing.is_key_pressed(KeyboardKey::KEY_DELETE)
+                || h_drawing.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_MIDDLE){
                 for uuid in selected_lines.clone().into_iter() {
                     HashMap::remove(&mut editor.walls, &uuid);
                 }
