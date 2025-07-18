@@ -1,10 +1,10 @@
 mod entity;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use entity::entity::Entity;
 
 use raylib::prelude::*;
-use std::vec::Vec;
+use uuid::Uuid;
 
 #[derive(Default, Copy, Clone)]
 struct Line {
@@ -23,7 +23,7 @@ enum State {
 }
 
 struct Editor {
-    walls: Vec<Line>,
+    walls: HashMap<Uuid, Line>,
     state: State,
     wall_creation: Line,
     selection: Line,
@@ -44,13 +44,13 @@ fn main() {
     let mut fps_str = String::from("FPS 0");
     let mut fps_timer: f32 = 0.0;
     let mut selection = Line{..Line::default()};
-    let mut selected_lines: HashSet<usize> = HashSet::new();
+    let mut selected_lines: HashSet<Uuid> = HashSet::new();
 
     let entity: Entity = Entity::create("Evan");
     println!("Entity uuid: {}", entity.uuid);
 
     let mut editor: Editor = Editor{
-        walls: Vec::new(), 
+        walls: HashMap::new(),
         state: State::None,
         wall_creation: Line{ ..Line::default() },
         selection: Line{..Line::default()},
@@ -75,8 +75,8 @@ fn main() {
 
             // Deleting selected walls
             if h_drawing.is_key_pressed(KeyboardKey::KEY_DELETE) {
-                for index in selected_lines.clone().into_iter() {
-                    editor.walls.remove(index);
+                for uuid in selected_lines.clone().into_iter() {
+                    HashMap::remove(&mut editor.walls, &uuid);
                 }
                 selected_lines.clear();
             }
@@ -153,22 +153,22 @@ fn main() {
         }
 
         // Drawl wall
-        for (index, w) in editor.walls.iter().enumerate() {
+        for (uuid, w) in editor.walls.iter() {
             if is_selecting {
                 if w.start.x >= editor.selection.start.x && w.end.x <= editor.selection.end.x
                     && w.start.y >= editor.selection.start.y && w.end.y <= editor.selection.end.y {
-                    if !selected_lines.contains(&index) {
-                        selected_lines.insert(index);
+                    if !selected_lines.contains(&uuid) {
+                        selected_lines.insert(*uuid);
                     }
                 }
                 else {
-                    if selected_lines.contains(&index) {
-                        selected_lines.remove(&index);
+                    if selected_lines.contains(&uuid) {
+                        selected_lines.remove(&uuid);
                     }
                 }
             }
 
-            draw_line(&mut h_drawing, &w, if selected_lines.contains(&index) {Color::YELLOW} else {Color::GREEN});
+            draw_line(&mut h_drawing, &w, if selected_lines.contains(&uuid) {Color::YELLOW} else {Color::GREEN});
         }
 
         match editor.state {
@@ -192,10 +192,13 @@ fn main() {
                             editor.wall_creation.end = start;
                         }
 
-                        editor.walls.push(Line {
-                            start: editor.wall_creation.start,
-                            end: editor.wall_creation.end,
-                        });
+                        editor.walls.insert(
+                            Uuid::new_v4(),
+                            Line {
+                                start: editor.wall_creation.start,
+                                end: editor.wall_creation.end,
+                            }
+                        );
                     }
                 }
 
@@ -227,7 +230,7 @@ fn main() {
                     let mut closest_point = None;
                     let mut shortest_distance = f32::MAX;
         
-                    for w in editor.walls.as_slice() {
+                    for (_, w) in editor.walls.iter_mut() {
                         let intersect_point = check_collision_lines(
                             w.start, w.end,
                             line.start, line.end

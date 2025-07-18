@@ -12,3 +12,7 @@ impl Entity {
         }
     }
 }
+
+pub struct Player {
+
+}
