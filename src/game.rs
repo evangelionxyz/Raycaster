@@ -32,7 +32,6 @@ impl Editor {
     }
 }
 
-
 pub struct Game {
     screen_width: i32,
     screen_height: i32,
